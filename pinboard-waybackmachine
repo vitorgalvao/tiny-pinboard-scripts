@@ -67,7 +67,7 @@ system('security', 'add-generic-password', '-a', Pinboard_token.split(':').first
 # Main
 All_links = JSON.parse(Net::HTTP.get(URI.parse(
   "https://api.pinboard.in/v1/posts/all?auth_token=#{Pinboard_token}&format=json"
-))).reject { _1['toread'] == 'yes' }.map { _1['href'] }
+))).reject { _1['toread'] == 'yes' }.map { _1['href'] }.reject { _1.start_with?('https://web.archive.org/web') }
 
 Bookmarks_count = All_links.count
 
