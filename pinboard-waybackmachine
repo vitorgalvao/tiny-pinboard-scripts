@@ -82,7 +82,12 @@ All_links.each_with_index { |link, index|
   # Only save links never backed up or last backed up over 180 days (6 months) ago
   if snapshots.empty? || (Date.today - Date.parse(snapshots['closest']['timestamp'])).to_i > 180
     puts "[Saving…] #{link}"
-    Net::HTTP.get(URI.parse("https://web.archive.org/save/#{link}"))
+
+    uri = URI.parse("https://web.archive.org/save/#{link}")
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = 180
+    http.request(Net::HTTP::Get.new(uri.request_uri))
+
     next
   end
 
