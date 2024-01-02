@@ -21,7 +21,7 @@ ARGV.push('--help') if ARGV.empty?
 options = {}
 OptionParser.new do |parser|
   parser.banner = <<~BANNER
-    Substitute URLs of Pinboard bookmarks. Interacts with the files produced by "pinboardlinkcheck": text file, each line following the pattern 'old_url → new_url'.
+    Substitute URLs of Pinboard bookmarks. Interacts with the files produced by 'pinboard-link-check': text file, each line following the pattern 'old_url → new_url'.
 
     Usage:
       #{File.basename($PROGRAM_NAME)} [options] <file>

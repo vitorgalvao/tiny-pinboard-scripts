@@ -53,7 +53,7 @@ Options:
   -r, --redirect-log      If set, links with 301 (Moved permanently) will be on their own log. Pairs well with the 'pinboard-url-update' script.
   -l, --log-dir <dir>     Directory to save logs to. Defaults to the home directory.
   -i, --include-unread    Also check unread bookmarks.
-  -g, --include-ignored   Do not ignore links with a 'pinboard-link-check-ignore' tag
+  -g, --include-ignored   Do not ignore links with a 'pinboard-link-check-ignore' tag.
   -t, --token <token>     Your Pinboard API token.
   -a, --ask-for-token     Ask for your Pinboard API token on start.
   -s, --save-token        Save Pinboard API token to Keychain and exit. Use with '--token' or '--ask-for-token' (macOS-only).
@@ -63,7 +63,7 @@ Options:
 ### pinboard-url-update
 
 ```
-Substitute URLs of Pinboard bookmarks. Interacts with the files produced by "pinboardlinkcheck": text file, each line following the pattern 'old_url → new_url'.
+Substitute URLs of Pinboard bookmarks. Interacts with the files produced by 'pinboard-link-check': text file, each line following the pattern 'old_url → new_url'.
 
 Usage:
   pinboard-url-update [options] <file>
