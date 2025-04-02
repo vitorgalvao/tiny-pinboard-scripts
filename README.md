@@ -1,8 +1,14 @@
-# Scripts to Interact with [Pinboard](https://pinboard.in/)
+# Tiny Pinboard Scripts
 
-You can install these via the [the Homebrew tap](https://github.com/vitorgalvao/homebrew-tiny-scripts), or download and run them directly as they are self-contained.
+Tiny Pinboard Scripts is a collection of scripts to interact with the [Pinboard](https://pinboard.in/) bookmarking service.
 
-### pinboard-backup
+## Installation
+
+Install with [Homebrew](https://brew.sh) via the [Homebrew Tiny Scripts tap](https://github.com/vitorgalvao/homebrew-tiny-scripts). Alternatively, download the executables at the root of this repository and call them directly.
+
+## Usage
+
+### `pinboard-backup`
 
 ```
 Backup all bookmarks from a pinboard account.
@@ -21,7 +27,7 @@ Options:
   -h, --help            Show this message.
 ```
 
-### pinboard-delete-unread
+### `pinboard-delete-unread`
 
 ```
 Delete Pinboard unread bookmarks older than X days. Give 'all' as an argument to delete all unread bookmarks.
@@ -37,7 +43,7 @@ Options:
     -s, --save-token                 Save Pinboard API token to Keychain and exit (macOS-only). Use with "--token" or "--ask-for-token".
 ```
 
-### pinboard-link-check
+### `pinboard-link-check`
 
 ```
 Check the status code of links saved to a pinboard account.
@@ -60,7 +66,7 @@ Options:
   -h, --help              Show this message.
 ```
 
-### pinboard-url-update
+### `pinboard-url-update`
 
 ```
 Substitute URLs of Pinboard bookmarks. Interacts with the files produced by 'pinboard-link-check': text file, each line following the pattern 'old_url → new_url'.
@@ -76,7 +82,7 @@ Options:
     -s, --save-token                 Save Pinboard API token to Keychain and exit (macOS-only). Use with "--token" or "--ask-for-token".
 ```
 
-### pinboard-waybackmachine
+### `pinboard-waybackmachine`
 
 ```
 Add to the Wayback Machine links saved to a pinboard account.
