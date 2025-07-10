@@ -144,7 +144,7 @@ readonly links="$(
 link_countdown="$(wc -l <<< "${links}" | tr -d ' ')"
 
 # Check each link individually
-for page in ${links} ; do
+for page in ${links}; do
   echo -n "[${link_countdown}] "
   ((link_countdown--))
 
