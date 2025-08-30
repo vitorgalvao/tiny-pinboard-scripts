@@ -50,7 +50,7 @@ while [[ "${1}" ]]; do
       readonly keep_unread='true'
       ;;
     -g | --include-ignored)
-      readonly do_not_ignore="${2}"
+      readonly do_not_ignore='true'
       shift
       ;;
     -t | --token)
