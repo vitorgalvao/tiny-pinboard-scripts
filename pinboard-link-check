@@ -1,7 +1,6 @@
 #!/bin/bash
 
 readonly program="$(basename "${0}")"
-readonly user_agent='Mozilla'
 
 # Instructions
 function usage {
@@ -9,7 +8,6 @@ function usage {
     Check the status code of links saved to a pinboard account.
 
     Bookmarks with a tag of the form 'plc-NNN' are considered OK if the status code is NNN, and not otherwise (including 200).
-    Bookmarks with a 'plc-ua' tag are checked with a user agent of '${user_agent}'.
 
     Usage:
       ${program} [options]
@@ -130,9 +128,6 @@ for bookmark in "${bookmarks[@]}"; do
   echo -n "[${link_countdown}] "
   ((link_countdown--))
 
-  # Grab URL
-  url="$(jq --raw-output '.href' <<< "${bookmark}")"
-
   # Populate tags
   tags=()
 
@@ -140,16 +135,9 @@ for bookmark in "${bookmarks[@]}"; do
     tags+=("${tag}")
   done < <(jq --raw-output '.tags // "" | split(" ")[] | select(length > 0)' <<< "${bookmark}")
 
-  # Default request command
-  request=(curl --silent --write-out '%{http_code}' --output /dev/null "${url}")
-
-  # Check if request with user agent
-  for tag in "${tags[@]}"; do
-    [[ "${tag}" == 'plc-ua' ]] && request+=(--user-agent "${user_agent}")
-  done
-
   # Make request to get status
-  status="$("${request[@]}")"
+  url="$(jq --raw-output '.href' <<< "${bookmark}")"
+  status="$(curl --silent --write-out '%{http_code}' --output /dev/null "${url}")"
 
   # Some bookmarks expect a non-200 status
   ok_code='200'
