@@ -1,13 +1,15 @@
 #!/bin/bash
 
 readonly program="$(basename "${0}")"
+readonly user_agent='Mozilla'
 
 # Instructions
 function usage {
   echo "
     Check the status code of links saved to a pinboard account.
 
-    By default, unread bookmarks and bookmarks with a 'pinboard-link-check-ignore' tag are ignored.
+    Bookmarks with a tag of the form 'plc-NNN' are considered OK if the status code is NNN, and not otherwise (including 200).
+    Bookmarks with a 'plc-ua' tag are checked with a user agent of '${user_agent}'.
 
     Usage:
       ${program} [options]
@@ -18,7 +20,6 @@ function usage {
       -r, --redirect-log      If set, links with 301 (Moved permanently) will be on their own log. Pairs well with the 'pinboard-url-update' script.
       -l, --log-dir <dir>     Directory to save logs to. Defaults to the home directory.
       -i, --include-unread    Also check unread bookmarks.
-      -g, --include-ignored   Do not ignore links with a 'pinboard-link-check-ignore' tag.
       -t, --token <token>     Your Pinboard API token.
       -a, --ask-for-token     Ask for your Pinboard API token on start.
       -s, --save-token        Save Pinboard API token to Keychain and exit. Use with '--token' or '--ask-for-token' (macOS-only).
@@ -48,10 +49,6 @@ while [[ "${1}" ]]; do
       ;;
     -i | --include-unread)
       readonly keep_unread='true'
-      ;;
-    -g | --include-ignored)
-      readonly do_not_ignore='true'
-      shift
       ;;
     -t | --token)
       readonly token="${2}"
@@ -115,70 +112,67 @@ if [[ -n "${set_keychain_token}" ]]; then
   exit 0
 fi
 
-# Get all your pinboard links
-readonly links="$(
-  all="$(curl --silent "https://api.pinboard.in/v1/posts/all?auth_token=${token}" | grep '^<post')"
+# Get pinboard bookmarks
+bookmarks=()
 
-  after_ignores="$(
-    if [[ "${do_not_ignore}" ]]; then
-      echo "${all}"
-      return
-    fi
+while IFS= read -r bookmark; do
+  [[ "${keep_unread}" && "$(jq '.toread == "yes"')" == 'true' ]] && continue
+  bookmarks+=("${bookmark}")
+done < <(curl --silent "https://api.pinboard.in/v1/posts/all?auth_token=${token}&format=json" | jq --raw-output --compact-output '.[]')
 
-    grep --extended-regexp --invert-match 'tag=".*?pinboard-link-check-ignore.*?"' <<< "${all}"
-  )"
+readonly bookmarks
 
-  after_unread="$(
-    if [[ "${keep_unread}" ]]; then
-      echo "${after_ignores}"
-      return
-    fi
-
-    grep --invert-match 'toread="yes"' <<< "${after_ignores}"
-  )"
-
-  # Final output
-  cut -d '"' -f 2 <<< "${after_unread}" | sed '1d' | perl -MHTML::Entities -ne 'print decode_entities($_)'
-)"
-
-link_countdown="$(wc -l <<< "${links}" | tr -d ' ')"
+link_countdown="${#bookmarks[@]}"
 
 # Check each link individually
-for page in ${links}; do
+for bookmark in "${bookmarks[@]}"; do
+  # Output count
   echo -n "[${link_countdown}] "
   ((link_countdown--))
 
-  status="$(curl --silent --write-out '%{http_code}' --output /dev/null "${page}")"
+  # Grab URL
+  url="$(jq --raw-output '.href' <<< "${bookmark}")"
 
-  if [[ "${status:0:1}" == '2' ]]; then
-    good "${status}" "${page}"
-  elif [[ "${status:0:1}" == '3' ]]; then
-    warning "${status}" "${page}"
-  else
-    bad "${status}" "${page}"
-  fi
+  # Populate tags
+  tags=()
 
-  # Append to log file
-  echo "${status} ${page}" >> "${log_file}"
-done
+  while IFS= read -r tag; do
+    tags+=("${tag}")
+  done < <(jq --raw-output '.tags // "" | split(" ")[] | select(length > 0)' <<< "${bookmark}")
 
-# Cleanup
-# Remove every link with a '200' code from the log
-sed -i '' '/^200/d' "${log_file}"
+  # Default request command
+  request=(curl --silent --write-out '%{http_code}' --output /dev/null "${url}")
 
-# Order links by status code
-readonly ordered_links=$(sort "${log_file}")
-echo "${ordered_links}" > "${log_file}"
-
-# Move 301 links to redirect log, if specified
-if [[ -n "${redirect_log}" ]]; then
-  readonly redirect_links="$(grep '^301' "${log_file}" | sed 's/^301 //')"
-
-  for page in ${redirect_links}; do
-    redirect_url="$(curl --silent --write-out '%{redirect_url}' --output /dev/null "${page}")"
-    echo "${page} → ${redirect_url}" | tee -a "${redirect_log_file}"
+  # Check if request with user agent
+  for tag in "${tags[@]}"; do
+    [[ "${tag}" == 'plc-ua' ]] && request+=(--user-agent "${user_agent}")
   done
 
-  # Remove 301s from the main log
-  sed -i '' '/^301/d' "${log_file}"
-fi
+  # Make request to get status
+  status="$("${request[@]}")"
+
+  # Some bookmarks expect a non-200 status
+  ok_code='200'
+
+  for tag in "${tags[@]}"; do
+    [[ "${tag}" =~ plc-[0-9][0-9][0-9] ]] && ok_code="${tag#plc-}"
+  done
+
+  # Result
+  if [[ "${status}" == "${ok_code}" ]]; then
+    good "${status}" "${url}"
+  elif [[ "${status:0:1}" == 3 ]]; then
+    warning "${status}" "${url}"
+
+    # Move 301 links to redirect log, if specified
+    if [[ -n "${redirect_log}" ]]; then
+      redirect_url="$(curl --silent --write-out '%{redirect_url}' --output /dev/null "${url}")"
+      echo "${bookmark} → ${redirect_url}" >> "${redirect_log_file}"
+    else
+      echo "${status}" "${url}" >> "${log_file}"
+    fi
+  else
+    bad "${status}" "${url}"
+    echo "${status}" "${url}" >> "${log_file}"
+  fi
+done
