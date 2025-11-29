@@ -155,7 +155,7 @@ for bookmark in "${bookmarks[@]}"; do
     # Move 301 links to redirect log, if specified
     if [[ -n "${redirect_log}" ]]; then
       redirect_url="$(curl --silent --write-out '%{redirect_url}' --output /dev/null "${url}")"
-      echo "${bookmark} → ${redirect_url}" >> "${redirect_log_file}"
+      echo "${url} → ${redirect_url}" >> "${redirect_log_file}"
     else
       echo "${status}" "${url}" >> "${log_file}"
     fi
